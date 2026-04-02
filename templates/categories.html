@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Categories - Medicine House{% endblock %}
+{% block page_title %}Medicine Categories{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-5">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="fw-700 mb-3">Add New Category</h6>
+        <form method="POST">
+          <div class="mb-3"><label class="form-label fw-600">Category Name *</label><input type="text" name="name" class="form-control" required placeholder="e.g. Antibiotics"></div>
+          <div class="mb-3"><label class="form-label fw-600">Description</label><textarea name="description" class="form-control" rows="2" placeholder="Brief description..."></textarea></div>
+          <button type="submit" class="btn btn-primary w-100"><i class="fas fa-plus me-2"></i>Add Category</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-7">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-700 mb-3">All Categories ({{ categories|length }})</h6>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead><tr><th>#</th><th>Name</th><th>Description</th><th>Medicines</th><th>Actions</th></tr></thead>
+            <tbody>
+            {% for cat in categories %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="fw-600">{{ cat.name }}</td>
+              <td class="text-muted">{{ cat.description or '-' }}</td>
+              <td><span class="badge bg-primary">{{ cat.medicines|length }}</span></td>
+              <td>
+                {% if session.role == 'admin' and cat.medicines|length == 0 %}
+                <a href="{{ url_for('delete_category', id=cat.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete?')"><i class="fas fa-trash"></i></a>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center py-4 text-muted">No categories</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

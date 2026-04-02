@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% block title %}New Purchase Order - Medicine House{% endblock %}
+{% block page_title %}New Purchase Order{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="fw-700 mb-3">Add Medicines to Order</h6>
+        <div class="row g-2 mb-3">
+          <div class="col-md-6">
+            <select id="medSelect" class="form-select">
+              <option value="">-- Select Medicine --</option>
+              {% for m in medicines %}<option value="{{ m.id }}" data-name="{{ m.name }}" data-price="{{ m.purchase_price }}">{{ m.name }} (Current Stock: {{ m.quantity }})</option>{% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="number" id="orderQty" class="form-control" placeholder="Quantity" min="1" value="1">
+          </div>
+          <div class="col-md-3">
+            <input type="number" id="orderPrice" class="form-control" placeholder="Unit Price" step="0.01" min="0">
+          </div>
+        </div>
+        <button class="btn btn-outline-primary mb-3" onclick="addOrderItem()"><i class="fas fa-plus me-2"></i>Add Item</button>
+        <table class="table" id="orderTable">
+          <thead><tr><th>Medicine</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr></thead>
+          <tbody id="orderItems">
+            <tr id="emptyRow"><td colspan="5" class="text-center py-3 text-muted">No items added yet</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="fw-700 mb-3">Order Details</h6>
+        <div class="mb-3">
+          <label class="form-label fw-600">Supplier *</label>
+          <select id="supplierId" class="form-select">
+            <option value="">-- Select Supplier --</option>
+            {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-600">Notes</label>
+          <textarea id="orderNotes" class="form-control" rows="2" placeholder="Additional notes..."></textarea>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between mb-3">
+          <span class="fw-700 fs-5">Total</span>
+          <span id="totalDisplay" class="fw-800 fs-4 text-primary">₹0.00</span>
+        </div>
+        <button class="btn btn-primary w-100" onclick="submitOrder()" id="submitBtn" disabled>
+          <i class="fas fa-paper-plane me-2"></i>Place Order
+        </button>
+        <a href="{{ url_for('purchase_orders') }}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let items = [];
+
+document.getElementById('medSelect').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  if (this.value) document.getElementById('orderPrice').value = opt.dataset.price;
+});
+
+function addOrderItem() {
+  const sel = document.getElementById('medSelect');
+  const qty = parseInt(document.getElementById('orderQty').value);
+  const price = parseFloat(document.getElementById('orderPrice').value);
+  if (!sel.value || !qty || !price) { alert('Please fill all fields'); return; }
+  const opt = sel.options[sel.selectedIndex];
+  const existing = items.find(i => i.medicine_id == sel.value);
+  if (existing) { existing.quantity += qty; existing.total_price = existing.quantity * existing.unit_price; }
+  else {
+    items.push({ medicine_id: sel.value, medicine_name: opt.dataset.name, quantity: qty, unit_price: price, total_price: qty * price });
+  }
+  renderTable();
+}
+
+function removeItem(i) { items.splice(i, 1); renderTable(); }
+
+function renderTable() {
+  const tbody = document.getElementById('orderItems');
+  if (!items.length) {
+    tbody.innerHTML = '<tr id="emptyRow"><td colspan="5" class="text-center py-3 text-muted">No items added yet</td></tr>';
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('totalDisplay').textContent = '₹0.00';
+    return;
+  }
+  tbody.innerHTML = items.map((item, i) => `
+    <tr>
+      <td class="fw-500">${item.medicine_name}</td>
+      <td>${item.quantity}</td>
+      <td>₹${item.unit_price.toFixed(2)}</td>
+      <td class="fw-600">₹${item.total_price.toFixed(2)}</td>
+      <td><button class="btn btn-sm btn-outline-danger" onclick="removeItem(${i})"><i class="fas fa-times"></i></button></td>
+    </tr>`).join('');
+  const total = items.reduce((s, i) => s + i.total_price, 0);
+  document.getElementById('totalDisplay').textContent = '₹' + total.toFixed(2);
+  document.getElementById('submitBtn').disabled = false;
+}
+
+function submitOrder() {
+  const supplierId = document.getElementById('supplierId').value;
+  if (!supplierId) { alert('Please select a supplier'); return; }
+  if (!items.length) { alert('Please add at least one item'); return; }
+  const total_amount = items.reduce((s, i) => s + i.total_price, 0);
+  const payload = {
+    supplier_id: supplierId,
+    total_amount,
+    notes: document.getElementById('orderNotes').value,
+    items
+  };
+  document.getElementById('submitBtn').disabled = true;
+  fetch('/purchase-orders/add', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) window.location.href = '/purchase-orders';
+      else { alert('Error placing order'); document.getElementById('submitBtn').disabled = false; }
+    });
+}
+</script>
+{% endblock %}

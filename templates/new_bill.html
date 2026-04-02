@@ -1,0 +1,208 @@
+{% extends 'base.html' %}
+{% block title %}New Bill - Medicine House{% endblock %}
+{% block page_title %}New Bill{% endblock %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-md-8">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="fw-700 mb-3"><i class="fas fa-search me-2 text-primary"></i>Search & Add Medicines</h6>
+        <div class="position-relative mb-3">
+          <input type="text" id="medSearch" class="form-control form-control-lg" placeholder="Type medicine name to search...">
+          <div id="searchResults" class="position-absolute bg-white border rounded-3 shadow w-100" style="z-index:999;display:none;max-height:250px;overflow-y:auto;top:100%;"></div>
+        </div>
+        <div class="table-responsive">
+          <table class="table" id="billTable">
+            <thead>
+              <tr><th>Medicine</th><th>Qty</th><th>Unit Price</th><th>Total</th><th></th></tr>
+            </thead>
+            <tbody id="billItems">
+              <tr id="emptyRow"><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-pills fa-2x mb-2 d-block opacity-25"></i>Search and add medicines above</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-body p-4">
+        <h6 class="fw-700 mb-3"><i class="fas fa-user me-2 text-primary"></i>Customer Details</h6>
+        <div class="mb-3">
+          <label class="form-label fw-600" style="font-size:13px;">Customer</label>
+          <select id="customerId" class="form-select">
+            <option value="">Walk-in Customer</option>
+            {% for c in customers %}
+            <option value="{{ c.id }}" data-name="{{ c.name }}">{{ c.name }} - {{ c.phone or 'No phone' }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-600" style="font-size:13px;">Customer Name</label>
+          <input type="text" id="customerName" class="form-control" placeholder="Walk-in Customer" value="Walk-in Customer">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-600" style="font-size:13px;">Payment Method</label>
+          <select id="paymentMethod" class="form-select">
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="upi">UPI</option>
+            <option value="credit">Credit</option>
+          </select>
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="text-muted">Subtotal</span>
+          <span id="subtotalDisplay" class="fw-600">₹0.00</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted">Discount (₹)</span>
+          <input type="number" id="discount" class="form-control form-control-sm text-end" style="width:100px;" value="0" min="0" oninput="calculateTotal()">
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-muted">Tax GST (₹)</span>
+          <input type="number" id="tax" class="form-control form-control-sm text-end" style="width:100px;" value="0" min="0" oninput="calculateTotal()">
+        </div>
+        <hr>
+        <div class="d-flex justify-content-between mb-3">
+          <span class="fw-700 fs-5">TOTAL</span>
+          <span id="totalDisplay" class="fw-800 fs-4 text-success">₹0.00</span>
+        </div>
+        <button class="btn btn-primary w-100" onclick="submitBill()" id="submitBtn" disabled>
+          <i class="fas fa-check-circle me-2"></i>Generate Bill
+        </button>
+        <a href="{{ url_for('billing') }}" class="btn btn-outline-secondary w-100 mt-2">Cancel</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let items = [];
+
+document.getElementById('customerId').addEventListener('change', function() {
+  const opt = this.options[this.selectedIndex];
+  if (this.value) {
+    document.getElementById('customerName').value = opt.dataset.name;
+  } else {
+    document.getElementById('customerName').value = 'Walk-in Customer';
+  }
+});
+
+let searchTimeout;
+document.getElementById('medSearch').addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  const q = this.value.trim();
+  if (q.length < 2) { document.getElementById('searchResults').style.display = 'none'; return; }
+  searchTimeout = setTimeout(() => {
+    fetch(`/api/medicines/search?q=${encodeURIComponent(q)}`)
+      .then(r => r.json())
+      .then(data => {
+        const results = document.getElementById('searchResults');
+        if (!data.length) { results.style.display = 'none'; return; }
+        results.innerHTML = data.map(m => `
+          <div class="p-3 border-bottom search-item" style="cursor:pointer;" onclick='addItem(${JSON.stringify(m)})'>
+            <div class="fw-600">${m.name}</div>
+            <div class="text-muted" style="font-size:12px;">₹${m.price.toFixed(2)} | Stock: ${m.qty} ${m.unit}</div>
+          </div>`).join('');
+        results.style.display = 'block';
+      });
+  }, 300);
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#medSearch') && !e.target.closest('#searchResults')) {
+    document.getElementById('searchResults').style.display = 'none';
+  }
+});
+
+function addItem(med) {
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('medSearch').value = '';
+  const existing = items.find(i => i.medicine_id === med.id);
+  if (existing) {
+    if (existing.quantity < med.qty) existing.quantity++;
+    else { alert('Not enough stock!'); return; }
+  } else {
+    items.push({ medicine_id: med.id, medicine_name: med.name, quantity: 1, unit_price: med.price, max_qty: med.qty });
+  }
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('billItems');
+  if (!items.length) {
+    tbody.innerHTML = '<tr id="emptyRow"><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-pills fa-2x mb-2 d-block opacity-25"></i>Search and add medicines above</td></tr>';
+    document.getElementById('submitBtn').disabled = true;
+    calculateTotal();
+    return;
+  }
+  tbody.innerHTML = items.map((item, i) => `
+    <tr>
+      <td class="fw-500">${item.medicine_name}</td>
+      <td style="width:100px;">
+        <input type="number" class="form-control form-control-sm" value="${item.quantity}" min="1" max="${item.max_qty}"
+          onchange="updateQty(${i}, this.value)">
+      </td>
+      <td>₹${item.unit_price.toFixed(2)}</td>
+      <td class="fw-600 text-success">₹${(item.quantity * item.unit_price).toFixed(2)}</td>
+      <td><button class="btn btn-sm btn-outline-danger" onclick="removeItem(${i})"><i class="fas fa-times"></i></button></td>
+    </tr>`).join('');
+  document.getElementById('submitBtn').disabled = false;
+  calculateTotal();
+}
+
+function updateQty(i, val) {
+  val = parseInt(val);
+  if (val < 1) val = 1;
+  if (val > items[i].max_qty) { alert('Not enough stock!'); val = items[i].max_qty; }
+  items[i].quantity = val;
+  renderTable();
+}
+
+function removeItem(i) {
+  items.splice(i, 1);
+  renderTable();
+}
+
+function calculateTotal() {
+  const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
+  const discount = parseFloat(document.getElementById('discount').value) || 0;
+  const tax = parseFloat(document.getElementById('tax').value) || 0;
+  const total = subtotal - discount + tax;
+  document.getElementById('subtotalDisplay').textContent = '₹' + subtotal.toFixed(2);
+  document.getElementById('totalDisplay').textContent = '₹' + Math.max(0, total).toFixed(2);
+}
+
+function submitBill() {
+  if (!items.length) return;
+  const subtotal = items.reduce((s, i) => s + i.quantity * i.unit_price, 0);
+  const discount = parseFloat(document.getElementById('discount').value) || 0;
+  const tax = parseFloat(document.getElementById('tax').value) || 0;
+  const total = Math.max(0, subtotal - discount + tax);
+  const payload = {
+    customer_id: document.getElementById('customerId').value || null,
+    customer_name: document.getElementById('customerName').value || 'Walk-in Customer',
+    payment_method: document.getElementById('paymentMethod').value,
+    subtotal, discount, tax, total,
+    items: items.map(i => ({ medicine_id: i.medicine_id, medicine_name: i.medicine_name, quantity: i.quantity, unit_price: i.unit_price, total_price: i.quantity * i.unit_price }))
+  };
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Generating...';
+  fetch('/billing/new', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        window.location.href = `/billing/${data.bill_id}`;
+      } else {
+        alert(data.error || 'Error generating bill');
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('submitBtn').innerHTML = '<i class="fas fa-check-circle me-2"></i>Generate Bill';
+      }
+    });
+}
+</script>
+{% endblock %}

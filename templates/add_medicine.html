@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Add Medicine - Medicine House{% endblock %}
+{% block page_title %}Add New Medicine{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-9">
+<div class="card">
+    <div class="card-body p-4">
+        <form method="POST">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-600">Medicine Name *</label>
+                    <input type="text" name="name" class="form-control" required placeholder="e.g. Paracetamol 500mg">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-600">Generic Name</label>
+                    <input type="text" name="generic_name" class="form-control" placeholder="e.g. Paracetamol">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Category</label>
+                    <select name="category_id" class="form-select">
+                        <option value="">-- Select Category --</option>
+                        {% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Supplier</label>
+                    <select name="supplier_id" class="form-select">
+                        <option value="">-- Select Supplier --</option>
+                        {% for s in suppliers %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Batch Number</label>
+                    <input type="text" name="batch_number" class="form-control" placeholder="e.g. B001">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600">Quantity *</label>
+                    <input type="number" name="quantity" class="form-control" required min="0" placeholder="0">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600">Unit</label>
+                    <select name="unit" class="form-select">
+                        <option value="tablets">Tablets</option>
+                        <option value="capsules">Capsules</option>
+                        <option value="bottles">Bottles</option>
+                        <option value="vials">Vials</option>
+                        <option value="strips">Strips</option>
+                        <option value="sachets">Sachets</option>
+                        <option value="tubes">Tubes</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600">Purchase Price (₹) *</label>
+                    <input type="number" name="purchase_price" class="form-control" required step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600">Selling Price (₹) *</label>
+                    <input type="number" name="selling_price" class="form-control" required step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Expiry Date</label>
+                    <input type="date" name="expiry_date" class="form-control">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Low Stock Threshold</label>
+                    <input type="number" name="low_stock_threshold" class="form-control" value="10" min="0">
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label fw-600">Description</label>
+                    <textarea name="description" class="form-control" rows="2" placeholder="Additional notes..."></textarea>
+                </div>
+                <div class="col-12 d-flex gap-2 justify-content-end">
+                    <a href="{{ url_for('medicines') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Save Medicine</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

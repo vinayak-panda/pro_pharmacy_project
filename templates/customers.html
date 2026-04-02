@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}Customers - Medicine House{% endblock %}
+{% block page_title %}Customers{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <form class="d-flex gap-2" method="GET">
+        <input type="text" name="search" class="form-control" placeholder="Search customers..." value="{{ request.args.get('search','') }}" style="width:240px;">
+        <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search"></i></button>
+      </form>
+      <a href="{{ url_for('add_customer') }}" class="btn btn-primary"><i class="fas fa-user-plus me-2"></i>Add Customer</a>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-hover">
+        <thead><tr><th>#</th><th>Name</th><th>Phone</th><th>Email</th><th>Total Bills</th><th>Actions</th></tr></thead>
+        <tbody>
+        {% for cust in customers %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td class="fw-600">{{ cust.name }}</td>
+          <td>{{ cust.phone or '-' }}</td>
+          <td>{{ cust.email or '-' }}</td>
+          <td><span class="badge bg-primary">{{ cust.bills|length }}</span></td>
+          <td><a href="{{ url_for('customer_detail', id=cust.id) }}" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i></a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center py-4 text-muted">No customers found</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

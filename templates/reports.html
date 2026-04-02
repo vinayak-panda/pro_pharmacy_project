@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% block title %}Reports - Medicine House{% endblock %}
+{% block page_title %}Reports & Analytics{% endblock %}
+{% block content %}
+<!-- Period Filter -->
+<div class="card mb-4">
+  <div class="card-body py-3">
+    <div class="d-flex gap-2 align-items-center">
+      <span class="fw-600 me-2">Period:</span>
+      {% for p, label in [('today','Today'),('week','Last 7 Days'),('month','This Month'),('year','This Year')] %}
+      <a href="{{ url_for('reports', period=p) }}" class="btn btn-sm {% if period == p %}btn-primary{% else %}btn-outline-primary{% endif %}">{{ label }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Summary Stats -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#1a5276,#2980b9);">
+      <h6>Total Revenue</h6>
+      <h2>₹{{ "%.0f"|format(total_revenue) }}</h2>
+      <i class="fas fa-rupee-sign icon"></i>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#1e8449,#27ae60);">
+      <h6>Total Bills</h6>
+      <h2>{{ total_bills }}</h2>
+      <i class="fas fa-receipt icon"></i>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#7d6608,#f39c12);">
+      <h6>Avg Bill Value</h6>
+      <h2>₹{{ "%.0f"|format(total_revenue / total_bills if total_bills else 0) }}</h2>
+      <i class="fas fa-chart-line icon"></i>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card" style="background:linear-gradient(135deg,#6c3483,#9b59b6);">
+      <h6>Expiry Alerts</h6>
+      <h2>{{ expiry_report|length }}</h2>
+      <i class="fas fa-clock icon"></i>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Top Medicines -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-700 mb-3">Top Selling Medicines</h6>
+        {% if top_medicines %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>#</th><th>Medicine</th><th>Qty Sold</th><th>Revenue</th></tr></thead>
+            <tbody>
+            {% for med in top_medicines %}
+            <tr>
+              <td>{{ loop.index }}</td>
+              <td class="fw-500">{{ med.medicine_name }}</td>
+              <td>{{ med.total_qty }}</td>
+              <td class="text-success fw-600">₹{{ "%.2f"|format(med.total_revenue) }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">No sales data for this period</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Expiry Report -->
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-700 mb-3">Expiry Alert Report (Next 60 Days)</h6>
+        {% if expiry_report %}
+        <div class="table-responsive" style="max-height:320px;overflow-y:auto;">
+          <table class="table table-sm">
+            <thead><tr><th>Medicine</th><th>Stock</th><th>Expiry</th><th>Status</th></tr></thead>
+            <tbody>
+            {% for med in expiry_report %}
+            <tr>
+              <td class="fw-500">{{ med.name }}</td>
+              <td>{{ med.quantity }}</td>
+              <td>{{ med.expiry_date.strftime('%d %b %Y') if med.expiry_date else '-' }}</td>
+              <td>
+                {% if med.is_expired %}<span class="badge bg-danger">Expired</span>
+                {% elif med.is_expiring_soon %}<span class="badge bg-warning text-dark">Expiring Soon</span>
+                {% else %}<span class="badge bg-info">Watch</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted"><i class="fas fa-check-circle text-success fa-2x mb-2 d-block"></i>No expiry alerts!</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Low Stock Report -->
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-body">
+        <h6 class="fw-700 mb-3">Low Stock Report</h6>
+        {% if low_stock_report %}
+        <div class="table-responsive">
+          <table class="table table-sm">
+            <thead><tr><th>Medicine</th><th>Category</th><th>Current Stock</th><th>Threshold</th><th>Supplier</th></tr></thead>
+            <tbody>
+            {% for med in low_stock_report %}
+            <tr>
+              <td class="fw-600 text-danger">{{ med.name }}</td>
+              <td>{{ med.category.name if med.category else '-' }}</td>
+              <td><span class="badge bg-danger">{{ med.quantity }} {{ med.unit }}</span></td>
+              <td>{{ med.low_stock_threshold }}</td>
+              <td>{{ med.supplier.name if med.supplier else '-' }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted"><i class="fas fa-boxes text-success fa-2x mb-2 d-block"></i>All stocks are adequate!</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

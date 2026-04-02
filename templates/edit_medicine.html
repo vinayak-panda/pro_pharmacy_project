@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% block title %}Edit Medicine - Medicine House{% endblock %}
+{% block page_title %}Edit Medicine{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+<div class="col-md-9">
+<div class="card">
+    <div class="card-body p-4">
+        <form method="POST">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-600">Medicine Name *</label>
+                    <input type="text" name="name" class="form-control" required value="{{ medicine.name }}">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-600">Generic Name</label>
+                    <input type="text" name="generic_name" class="form-control" value="{{ medicine.generic_name or '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Category</label>
+                    <select name="category_id" class="form-select">
+                        <option value="">-- Select Category --</option>
+                        {% for c in categories %}<option value="{{ c.id }}" {% if medicine.category_id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Supplier</label>
+                    <select name="supplier_id" class="form-select">
+                        <option value="">-- Select Supplier --</option>
+                        {% for s in suppliers %}<option value="{{ s.id }}" {% if medicine.supplier_id == s.id %}selected{% endif %}>{{ s.name }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Batch Number</label>
+                    <input type="text" name="batch_number" class="form-control" value="{{ medicine.batch_number or '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600">Quantity *</label>
+                    <input type="number" name="quantity" class="form-control" required min="0" value="{{ medicine.quantity }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600">Unit</label>
+                    <select name="unit" class="form-select">
+                        {% for u in ['tablets','capsules','bottles','vials','strips','sachets','tubes'] %}
+                        <option value="{{ u }}" {% if medicine.unit == u %}selected{% endif %}>{{ u|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600">Purchase Price (₹) *</label>
+                    <input type="number" name="purchase_price" class="form-control" required step="0.01" value="{{ medicine.purchase_price }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-600">Selling Price (₹) *</label>
+                    <input type="number" name="selling_price" class="form-control" required step="0.01" value="{{ medicine.selling_price }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Expiry Date</label>
+                    <input type="date" name="expiry_date" class="form-control" value="{{ medicine.expiry_date.strftime('%Y-%m-%d') if medicine.expiry_date else '' }}">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-600">Low Stock Threshold</label>
+                    <input type="number" name="low_stock_threshold" class="form-control" value="{{ medicine.low_stock_threshold }}">
+                </div>
+                <div class="col-md-12">
+                    <label class="form-label fw-600">Description</label>
+                    <textarea name="description" class="form-control" rows="2">{{ medicine.description or '' }}</textarea>
+                </div>
+                <div class="col-12 d-flex gap-2 justify-content-end">
+                    <a href="{{ url_for('medicines') }}" class="btn btn-outline-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-2"></i>Update Medicine</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+{% endblock %}

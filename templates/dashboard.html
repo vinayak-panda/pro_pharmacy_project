@@ -1,0 +1,178 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard - Medicine House{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block content %}
+<!-- Stat Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card" style="background:linear-gradient(135deg,#1a5276,#2980b9);">
+            <h6>Today's Sales</h6>
+            <h2>₹{{ "%.0f"|format(today_sales) }}</h2>
+            <small>{{ today_bills }} bills today</small>
+            <i class="fas fa-rupee-sign icon"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background:linear-gradient(135deg,#1e8449,#27ae60);">
+            <h6>Monthly Sales</h6>
+            <h2>₹{{ "%.0f"|format(month_sales) }}</h2>
+            <small>This month</small>
+            <i class="fas fa-chart-line icon"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background:linear-gradient(135deg,#7d6608,#f39c12);">
+            <h6>Total Medicines</h6>
+            <h2>{{ total_medicines }}</h2>
+            <small>{{ total_suppliers }} suppliers</small>
+            <i class="fas fa-pills icon"></i>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card" style="background:linear-gradient(135deg,#78281f,#e74c3c);">
+            <h6>Alerts</h6>
+            <h2>{{ expired + low_stock }}</h2>
+            <small>{{ expired }} expired, {{ low_stock }} low stock</small>
+            <i class="fas fa-exclamation-triangle icon"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Alerts Row -->
+{% if expired > 0 or expiring_soon > 0 or low_stock > 0 %}
+<div class="row g-3 mb-4">
+    {% if expired > 0 %}
+    <div class="col-md-4">
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-0">
+            <i class="fas fa-exclamation-circle fa-lg"></i>
+            <div><strong>{{ expired }} Expired!</strong><br><small>Medicines past expiry date</small></div>
+            <a href="{{ url_for('medicines', filter='expired') }}" class="btn btn-sm btn-danger ms-auto">View</a>
+        </div>
+    </div>
+    {% endif %}
+    {% if expiring_soon > 0 %}
+    <div class="col-md-4">
+        <div class="alert alert-warning d-flex align-items-center gap-2 mb-0">
+            <i class="fas fa-clock fa-lg"></i>
+            <div><strong>{{ expiring_soon }} Expiring Soon</strong><br><small>Within 30 days</small></div>
+            <a href="{{ url_for('medicines', filter='expiring') }}" class="btn btn-sm btn-warning ms-auto">View</a>
+        </div>
+    </div>
+    {% endif %}
+    {% if low_stock > 0 %}
+    <div class="col-md-4">
+        <div class="alert alert-info d-flex align-items-center gap-2 mb-0">
+            <i class="fas fa-boxes fa-lg"></i>
+            <div><strong>{{ low_stock }} Low Stock</strong><br><small>Below threshold</small></div>
+            <a href="{{ url_for('medicines', filter='low_stock') }}" class="btn btn-sm btn-info ms-auto">View</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="row g-3">
+    <!-- Chart -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="card-title fw-700 mb-3">Sales Trend (Last 6 Months)</h6>
+                <canvas id="salesChart" height="90"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Quick Links -->
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h6 class="card-title fw-700 mb-3">Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('new_bill') }}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>New Bill</a>
+                    <a href="{{ url_for('add_medicine') }}" class="btn btn-outline-primary"><i class="fas fa-capsules me-2"></i>Add Medicine</a>
+                    <a href="{{ url_for('add_customer') }}" class="btn btn-outline-success"><i class="fas fa-user-plus me-2"></i>Add Customer</a>
+                    <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary"><i class="fas fa-chart-bar me-2"></i>View Reports</a>
+                </div>
+                <hr>
+                <div class="row text-center g-2">
+                    <div class="col-6">
+                        <div class="p-3 rounded-3" style="background:#f0f7ff;">
+                            <div class="fw-700 fs-4 text-primary">{{ total_customers }}</div>
+                            <div class="text-muted" style="font-size:12px;">Customers</div>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-3 rounded-3" style="background:#f0fff4;">
+                            <div class="fw-700 fs-4 text-success">{{ total_suppliers }}</div>
+                            <div class="text-muted" style="font-size:12px;">Suppliers</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Bills -->
+<div class="card mt-3">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="card-title fw-700 mb-0">Recent Bills</h6>
+            <a href="{{ url_for('billing') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr><th>Bill No</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Date</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                {% for bill in recent_bills %}
+                <tr>
+                    <td><span class="badge bg-primary">{{ bill.bill_number }}</span></td>
+                    <td>{{ bill.customer_name }}</td>
+                    <td class="fw-600 text-success">₹{{ "%.2f"|format(bill.total) }}</td>
+                    <td><span class="badge bg-{{ 'success' if bill.payment_method == 'cash' else 'info' }}">{{ bill.payment_method|title }}</span></td>
+                    <td class="text-muted">{{ bill.created_at.strftime('%d %b %Y, %H:%M') }}</td>
+                    <td>
+                        <a href="{{ url_for('bill_detail', id=bill.id) }}" class="btn btn-xs btn-outline-primary" style="font-size:12px;padding:3px 10px;">View</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center text-muted py-4">No bills yet</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ctx = document.getElementById('salesChart').getContext('2d');
+const labels = {{ monthly_data | map(attribute='month') | list | tojson }};
+const data = {{ monthly_data | map(attribute='sales') | list | tojson }};
+new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [{
+            label: 'Sales (₹)',
+            data: data,
+            backgroundColor: 'rgba(26,82,118,0.15)',
+            borderColor: '#1a5276',
+            borderWidth: 2,
+            borderRadius: 8,
+            fill: true
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { grid: { color: '#f0f4f8' }, ticks: { callback: v => '₹' + v.toLocaleString() } },
+            x: { grid: { display: false } }
+        }
+    }
+});
+</script>
+{% endblock %}

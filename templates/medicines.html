@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Medicines - Medicine House{% endblock %}
+{% block page_title %}Medicine Inventory{% endblock %}
+{% block content %}
+<div class="card">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="d-flex gap-2 flex-wrap">
+                <form class="d-flex gap-2" method="GET">
+                    <input type="text" name="search" class="form-control" placeholder="Search medicines..." value="{{ request.args.get('search','') }}" style="width:220px;">
+                    <select name="category" class="form-select" style="width:160px;">
+                        <option value="">All Categories</option>
+                        {% for c in categories %}<option value="{{ c.id }}" {% if request.args.get('category')|int == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+                    </select>
+                    <button class="btn btn-outline-primary" type="submit"><i class="fas fa-search"></i></button>
+                </form>
+                <div class="btn-group">
+                    <a href="{{ url_for('medicines') }}" class="btn btn-sm btn-outline-secondary {% if not request.args.get('filter') %}active{% endif %}">All</a>
+                    <a href="{{ url_for('medicines', filter='expired') }}" class="btn btn-sm btn-outline-danger {% if request.args.get('filter')=='expired' %}active{% endif %}">Expired</a>
+                    <a href="{{ url_for('medicines', filter='expiring') }}" class="btn btn-sm btn-outline-warning {% if request.args.get('filter')=='expiring' %}active{% endif %}">Expiring Soon</a>
+                    <a href="{{ url_for('medicines', filter='low_stock') }}" class="btn btn-sm btn-outline-info {% if request.args.get('filter')=='low_stock' %}active{% endif %}">Low Stock</a>
+                </div>
+            </div>
+            <a href="{{ url_for('add_medicine') }}" class="btn btn-primary"><i class="fas fa-plus me-2"></i>Add Medicine</a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>#</th><th>Medicine Name</th><th>Category</th><th>Stock</th>
+                        <th>Purchase Price</th><th>Selling Price</th><th>Expiry Date</th><th>Status</th><th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for med in medicines %}
+                <tr>
+                    <td class="text-muted">{{ loop.index }}</td>
+                    <td>
+                        <div class="fw-600">{{ med.name }}</div>
+                        <div class="text-muted" style="font-size:12px;">{{ med.generic_name or '' }} | Batch: {{ med.batch_number or '-' }}</div>
+                    </td>
+                    <td>{{ med.category.name if med.category else '-' }}</td>
+                    <td>
+                        <span class="fw-600 {% if med.is_low_stock %}text-danger{% else %}text-success{% endif %}">
+                            {{ med.quantity }} {{ med.unit }}
+                        </span>
+                    </td>
+                    <td>₹{{ "%.2f"|format(med.purchase_price) }}</td>
+                    <td>₹{{ "%.2f"|format(med.selling_price) }}</td>
+                    <td>{{ med.expiry_date.strftime('%d %b %Y') if med.expiry_date else '-' }}</td>
+                    <td>
+                        {% if med.is_expired %}
+                            <span class="badge bg-danger">Expired</span>
+                        {% elif med.is_expiring_soon %}
+                            <span class="badge bg-warning text-dark">Expiring Soon</span>
+                        {% elif med.is_low_stock %}
+                            <span class="badge bg-info">Low Stock</span>
+                        {% else %}
+                            <span class="badge bg-success">OK</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <a href="{{ url_for('edit_medicine', id=med.id) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></a>
+                            {% if session.role == 'admin' %}
+                            <a href="{{ url_for('delete_medicine', id=med.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Delete this medicine?')" title="Delete"><i class="fas fa-trash"></i></a>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="9" class="text-center py-5 text-muted"><i class="fas fa-capsules fa-2x mb-2 d-block"></i>No medicines found</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="text-muted" style="font-size:13px;">Showing {{ medicines|length }} medicines</div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Medicine House{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a5276;
+            --primary-light: #2980b9;
+            --accent: #27ae60;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --bg: #f0f4f8;
+            --sidebar-width: 260px;
+            --card-radius: 16px;
+        }
+        * { font-family: 'Plus Jakarta Sans', sans-serif; }
+        body { background: var(--bg); }
+
+        /* SIDEBAR */
+        .sidebar {
+            position: fixed; left: 0; top: 0; bottom: 0;
+            width: var(--sidebar-width);
+            background: linear-gradient(180deg, #0d3349 0%, #1a5276 60%, #1f618d 100%);
+            z-index: 1000; overflow-y: auto;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+        }
+        .sidebar-brand {
+            padding: 24px 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar-brand .brand-icon {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: white; margin-bottom: 10px;
+        }
+        .sidebar-brand h5 { color: white; margin: 0; font-weight: 800; font-size: 18px; }
+        .sidebar-brand small { color: rgba(255,255,255,0.5); font-size: 11px; }
+        .sidebar-section { padding: 16px 12px 4px; }
+        .sidebar-section span { color: rgba(255,255,255,0.35); font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+        .nav-link {
+            color: rgba(255,255,255,0.7) !important;
+            padding: 10px 16px !important;
+            border-radius: 10px !important;
+            margin: 2px 8px !important;
+            font-size: 14px; font-weight: 500;
+            display: flex; align-items: center; gap: 10px;
+            transition: all 0.2s;
+        }
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,255,255,0.12) !important;
+            color: white !important;
+        }
+        .nav-link.active { background: rgba(41,128,185,0.4) !important; color: white !important; }
+        .nav-link i { width: 20px; text-align: center; }
+        .badge-alert {
+            background: #e74c3c; color: white; border-radius: 20px;
+            font-size: 10px; padding: 2px 7px; margin-left: auto;
+        }
+        .user-card {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            padding: 16px; border-top: 1px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.2);
+        }
+        .user-card .user-name { color: white; font-size: 13px; font-weight: 600; }
+        .user-card .user-role { color: rgba(255,255,255,0.5); font-size: 11px; }
+
+        /* MAIN CONTENT */
+        .main-content { margin-left: var(--sidebar-width); min-height: 100vh; }
+        .top-bar {
+            background: white;
+            padding: 14px 28px;
+            border-bottom: 1px solid #e8edf2;
+            display: flex; align-items: center; justify-content: space-between;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        .top-bar h4 { margin: 0; font-weight: 700; color: #1a2332; }
+        .content-area { padding: 24px 28px; }
+
+        /* CARDS */
+        .card { border: none; border-radius: var(--card-radius); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .stat-card { border-radius: var(--card-radius); padding: 22px; color: white; position: relative; overflow: hidden; }
+        .stat-card .icon { font-size: 36px; opacity: 0.25; position: absolute; right: 20px; top: 50%; transform: translateY(-50%); }
+        .stat-card h6 { font-size: 12px; opacity: 0.8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+        .stat-card h2 { font-size: 28px; font-weight: 800; margin: 0; }
+
+        /* TABLE */
+        .table { font-size: 14px; }
+        .table th { font-weight: 600; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; border-top: none; }
+        .table td { vertical-align: middle; }
+        .badge { font-weight: 500; }
+
+        /* ALERTS */
+        .alert { border: none; border-radius: 12px; }
+
+        /* FORMS */
+        .form-control, .form-select { border-radius: 10px; border: 1.5px solid #e2e8f0; font-size: 14px; }
+        .form-control:focus, .form-select:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px rgba(41,128,185,0.1); }
+        .btn { border-radius: 10px; font-weight: 600; font-size: 14px; }
+        .btn-primary { background: var(--primary); border-color: var(--primary); }
+        .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
+
+        /* SCROLLBAR */
+        .sidebar::-webkit-scrollbar { width: 4px; }
+        .sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+{% if session.user_id %}
+<div class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-icon"><i class="fas fa-pills"></i></div>
+        <h5>Medicine House</h5>
+        <small>Pharmacy Management</small>
+    </div>
+
+    <div class="sidebar-section"><span>Main</span></div>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-home"></i> Dashboard
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-section"><span>Inventory</span></div>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link {% if 'medicine' in request.endpoint %}active{% endif %}" href="{{ url_for('medicines') }}">
+                <i class="fas fa-capsules"></i> Medicines
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'categories' %}active{% endif %}" href="{{ url_for('categories') }}">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-section"><span>Business</span></div>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link {% if 'bill' in request.endpoint %}active{% endif %}" href="{{ url_for('billing') }}">
+                <i class="fas fa-receipt"></i> Billing
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if 'customer' in request.endpoint %}active{% endif %}" href="{{ url_for('customers') }}">
+                <i class="fas fa-users"></i> Customers
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if 'supplier' in request.endpoint %}active{% endif %}" href="{{ url_for('suppliers') }}">
+                <i class="fas fa-truck"></i> Suppliers
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if 'purchase' in request.endpoint %}active{% endif %}" href="{{ url_for('purchase_orders') }}">
+                <i class="fas fa-shopping-cart"></i> Purchase Orders
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-section"><span>Analysis</span></div>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link {% if request.endpoint == 'reports' %}active{% endif %}" href="{{ url_for('reports') }}">
+                <i class="fas fa-chart-bar"></i> Reports
+            </a>
+        </li>
+    </ul>
+
+    {% if session.role == 'admin' %}
+    <div class="sidebar-section"><span>Admin</span></div>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a class="nav-link {% if 'user' in request.endpoint %}active{% endif %}" href="{{ url_for('users') }}">
+                <i class="fas fa-user-cog"></i> Users
+            </a>
+        </li>
+    </ul>
+    {% endif %}
+
+    <div class="user-card">
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:32px;height:32px;background:rgba(255,255,255,0.2);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:14px;">
+                <i class="fas fa-user"></i>
+            </div>
+            <div>
+                <div class="user-name">{{ session.full_name or session.username }}</div>
+                <div class="user-role">{{ session.role|title }}</div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="ms-auto" style="color:rgba(255,255,255,0.5);font-size:16px;" title="Logout">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="main-content">
+    <div class="top-bar">
+        <h4>{% block page_title %}Dashboard{% endblock %}</h4>
+        <div class="d-flex gap-2 align-items-center">
+            <span class="badge bg-primary">{{ session.role|title }}</span>
+            <span class="text-muted small">{{ session.username }}</span>
+        </div>
+    </div>
+    <div class="content-area">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for cat, msg in messages %}
+        <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</div>
+{% else %}
+<div>{% block content_noauth %}{% endblock %}</div>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>
